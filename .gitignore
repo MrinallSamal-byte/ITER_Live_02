@@ -12,6 +12,10 @@ yarn-error.log*
 # Uploads and generated files
 uploads/*
 !uploads/.gitkeep
+!uploads/android-app/
+uploads/android-app/*
+!uploads/android-app/*.apk
+!uploads/android-app/version.json
 backups/*
 !backups/.gitkeep
 
