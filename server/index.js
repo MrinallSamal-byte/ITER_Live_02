@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+const QRCode = require('qrcode');
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
@@ -248,6 +249,60 @@ app.get('/api/app-version', (req, res) => {
       message: 'Error fetching app version information'
     });
   }
+});
+
+// Generate a QR code PNG for the download URL
+app.get('/api/download-qr', async (req, res) => {
+  try {
+    const downloadUrl = `${req.protocol}://${req.get('host')}/api/download-app`;
+    const png = await QRCode.toBuffer(downloadUrl, { type: 'png', width: 400, margin: 1 });
+    res.setHeader('Content-Type', 'image/png');
+    res.send(png);
+  } catch (err) {
+    console.error('QR code generation error:', err);
+    res.status(500).json({ success: false, message: 'Failed to generate QR code' });
+  }
+});
+
+// Simple download helper page with QR code
+app.get('/download', (req, res) => {
+  const externalApkUrl = process.env.ANDROID_APK_URL;
+  const apkPath = path.join(__dirname, '../uploads/android-app/ITER-EduHub-release.apk');
+  const hasLocalApk = require('fs').existsSync(apkPath);
+  const available = (externalApkUrl && /^https?:\/\//i.test(externalApkUrl)) || hasLocalApk;
+
+  const html = `<!doctype html>
+  <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Download ITER EduHub</title>
+    <style>
+      body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b1120;color:#e5e7eb;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+      .card{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:24px;max-width:520px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+      .btn{display:inline-block;padding:12px 18px;border-radius:10px;background:#6d28d9;color:white;text-decoration:none;font-weight:600}
+      .muted{color:#9ca3af;font-size:14px;margin-top:10px}
+      img{border-radius:8px;border:1px solid #1f2937}
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>ITER EduHub – Android APK</h1>
+      ${available ? `
+        <p>Scan the QR code or tap the button below to download.</p>
+        <p><img src="/api/download-qr" alt="Download QR" width="200" height="200" /></p>
+        <p><a class="btn" href="/api/download-app">Download APK</a></p>
+        <p class="muted">If prompted, allow installs from unknown sources.</p>
+      ` : `
+        <p>Android app is not available yet.</p>
+        <p class="muted">Please check back soon.</p>
+      `}
+    </div>
+  </body>
+  </html>`;
+
+  res.setHeader('Content-Type', 'text/html');
+  res.send(html);
 });
 
 // 404 handler for API routes only
