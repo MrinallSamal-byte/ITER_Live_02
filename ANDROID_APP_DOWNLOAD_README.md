@@ -163,6 +163,26 @@ Response (JSON):
 
 ---
 
+## 🌐 Use an external APK URL (no server file upload)
+
+If you prefer to host the APK on an external service (GitHub Releases, S3, Firebase Storage, etc.), set the following environment variables and you won't need to copy the file to `uploads/android-app/`:
+
+1) In your `.env` (or platform env settings), add:
+
+```
+ANDROID_APK_URL=https://your.cdn.com/path/to/ITER-EduHub.apk
+ANDROID_APK_VERSION=1.0.0
+ANDROID_APK_SIZE_BYTES=52428800
+```
+
+2) Restart the server. The endpoints will behave as follows:
+- `GET /api/download-app` → 302 redirect to `ANDROID_APK_URL`
+- `GET /api/app-version` → returns `{ available: true, version, fileSize }` from env
+
+This enables the landing page Download button immediately, without storing the APK on your server.
+
+---
+
 ## 🤖 Automatic Building (CI/CD)
 
 ### GitHub Actions Workflow

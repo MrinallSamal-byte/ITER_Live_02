@@ -173,22 +173,27 @@ app.get('/contact', (req, res) => {
 
 // Android App Download Endpoint
 app.get('/api/download-app', (req, res) => {
+  const externalApkUrl = process.env.ANDROID_APK_URL;
   const apkPath = path.join(__dirname, '../uploads/android-app/ITER-EduHub-release.apk');
-  const versionPath = path.join(__dirname, '../uploads/android-app/version.json');
-  
-  // Check if APK exists
+
+  // If an external URL is configured, redirect to it
+  if (externalApkUrl && /^https?:\/\//i.test(externalApkUrl)) {
+    return res.redirect(302, externalApkUrl);
+  }
+
+  // Otherwise, serve local APK if present
   if (!require('fs').existsSync(apkPath)) {
     return res.status(404).json({
       success: false,
       message: 'Android app not available for download yet. Please check back later.'
     });
   }
-  
+
   // Set proper headers for APK download
   res.setHeader('Content-Type', 'application/vnd.android.package-archive');
   res.setHeader('Content-Disposition', 'attachment; filename="ITER-EduHub.apk"');
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  
+
   // Send the file
   res.sendFile(apkPath, (err) => {
     if (err) {
@@ -205,8 +210,23 @@ app.get('/api/download-app', (req, res) => {
 
 // Get Android App Version Info
 app.get('/api/app-version', (req, res) => {
+  const externalApkUrl = process.env.ANDROID_APK_URL;
   const versionPath = path.join(__dirname, '../uploads/android-app/version.json');
-  
+
+  // If external URL configured, expose version info from env when available
+  if (externalApkUrl && /^https?:\/\//i.test(externalApkUrl)) {
+    const version = process.env.ANDROID_APK_VERSION || '1.0.0';
+    const fileSizeRaw = parseInt(process.env.ANDROID_APK_SIZE_BYTES || '0', 10);
+    const fileSize = Number.isFinite(fileSizeRaw) && fileSizeRaw > 0 ? fileSizeRaw : 0;
+    return res.json({
+      success: true,
+      available: true,
+      version,
+      fileSize
+    });
+  }
+
+  // Fallback to local version.json
   if (!require('fs').existsSync(versionPath)) {
     return res.json({
       success: true,
@@ -214,7 +234,7 @@ app.get('/api/app-version', (req, res) => {
       message: 'Android app coming soon!'
     });
   }
-  
+
   try {
     const versionData = JSON.parse(require('fs').readFileSync(versionPath, 'utf8'));
     res.json({

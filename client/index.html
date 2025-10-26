@@ -798,8 +798,12 @@
                 const downloadBtn = document.querySelector('.download-android-btn');
                 
                 if (data.success && data.available) {
-                    const sizeInMB = (data.fileSize / (1024 * 1024)).toFixed(2);
-                    versionInfoEl.textContent = `Version ${data.version} • ${sizeInMB} MB`;
+                    if (data.fileSize && data.fileSize > 0) {
+                        const sizeInMB = (data.fileSize / (1024 * 1024)).toFixed(2);
+                        versionInfoEl.textContent = `Version ${data.version} • ${sizeInMB} MB`;
+                    } else {
+                        versionInfoEl.textContent = `Version ${data.version}`;
+                    }
                     versionInfoEl.style.color = 'var(--success-color, #10b981)';
                 } else {
                     versionInfoEl.textContent = 'Coming Soon!';
