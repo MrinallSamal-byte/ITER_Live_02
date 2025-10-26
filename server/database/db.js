@@ -87,8 +87,8 @@ const testConnection = async (retries = 3, delay = 1000) => {
   return false;
 };
 
-// Only test connection on startup in non-serverless environments
-if (!process.env.VERCEL) {
+// Only test connection on startup in development (avoid noisy logs/crashes in production)
+if (!process.env.VERCEL && (process.env.NODE_ENV || 'development') !== 'production') {
   testConnection();
 }
 

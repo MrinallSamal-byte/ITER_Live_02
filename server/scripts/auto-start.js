@@ -11,7 +11,8 @@ const dbConfig = {
 };
 
 const dbName = process.env.DB_NAME || 'iter_college_db';
-const autoSeed = (process.env.AUTO_SEED_ON_START || '').toLowerCase() !== 'false';
+// Default: do NOT auto-seed unless explicitly enabled
+const autoSeed = (process.env.AUTO_SEED_ON_START || '').toLowerCase() === 'true';
 const isProd = (process.env.NODE_ENV || '').toLowerCase() === 'production';
 
 async function needsSeeding() {
@@ -89,7 +90,7 @@ function isPortInUse(port, host = '0.0.0.0') {
         console.log('✅ AUTO-SEED: Database already seeded, skipping.');
       }
     } else {
-      console.log('ℹ️ AUTO-SEED disabled (production or AUTO_SEED_ON_START=false).');
+      console.log('ℹ️ AUTO-SEED disabled (production or AUTO_SEED_ON_START!=true).');
     }
   } catch (err) {
     console.error('❌ AUTO-SEED failed:', err.message);

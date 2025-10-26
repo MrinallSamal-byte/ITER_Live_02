@@ -1,5 +1,8 @@
 FROM node:18-alpine
 
+# Ensure production environment inside the container (avoids dev-only behaviors like auto-seeding)
+ENV NODE_ENV=production
+
 # Install build dependencies
 RUN apk add --no-cache python3 make g++
 
