@@ -1,0 +1,89 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'android-app/**'
+      - '.github/workflows/build-android.yml'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+      
+      - name: Grant execute permission for gradlew
+        run: chmod +x android-app/gradlew
+      
+      - name: Build Release APK
+        working-directory: ./android-app
+        run: ./gradlew assembleRelease --no-daemon
+      
+      - name: Create uploads directory
+        run: mkdir -p uploads/android-app
+      
+      - name: Copy APK to uploads
+        run: |
+          cp android-app/app/build/outputs/apk/release/app-release.apk uploads/android-app/ITER-EduHub-release.apk
+          echo "APK copied successfully"
+      
+      - name: Generate version metadata
+        run: |
+          cat > uploads/android-app/version.json << EOF
+          {
+            "version": "1.0.0",
+            "versionCode": 1,
+            "buildType": "release",
+            "buildDate": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "fileName": "ITER-EduHub-release.apk",
+            "fileSize": $(stat -f%z uploads/android-app/ITER-EduHub-release.apk 2>/dev/null || stat -c%s uploads/android-app/ITER-EduHub-release.apk),
+            "packageName": "com.iter.eduhub",
+            "builtBy": "GitHub Actions",
+            "commit": "${{ github.sha }}"
+          }
+          EOF
+      
+      - name: Commit and Push APK
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add uploads/android-app/ITER-EduHub-release.apk
+          git add uploads/android-app/version.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🤖 Auto-build: Update Android APK [skip ci]" && git push)
+      
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ITER-EduHub-APK
+          path: uploads/android-app/ITER-EduHub-release.apk
+          retention-days: 30
+      
+      - name: Build Summary
+        run: |
+          echo "### ✅ Android APK Build Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Details:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Package: com.iter.eduhub" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: 1.0.0" >> $GITHUB_STEP_SUMMARY
+          echo "- Build Type: Release" >> $GITHUB_STEP_SUMMARY
+          echo "- File: ITER-EduHub-release.apk" >> $GITHUB_STEP_SUMMARY
+          echo "- Size: $(du -h uploads/android-app/ITER-EduHub-release.apk | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Download URL (after deployment):**" >> $GITHUB_STEP_SUMMARY
+          echo "https://your-app.onrender.com/api/download-app" >> $GITHUB_STEP_SUMMARY

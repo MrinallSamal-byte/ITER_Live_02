@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: iter-aio
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_WHITELIST
+        value: https://iter-aio.onrender.com
+      - key: MAX_FILE_SIZE
+        value: "10485760"
+    disk:
+      name: uploads
+      mountPath: /opt/render/project/src/uploads
+      sizeGB: 1
+
+## Using an existing Render PostgreSQL database as provided. No auto DB provision here.
+## 
+## Note: To enable Android app downloads:
+## 1. Build the APK locally: cd android-app && gradlew assembleRelease
+## 2. Run: node scripts/build-and-deploy-android.js release
+## 3. Commit the APK in uploads/android-app/ directory
+## 4. Push to GitHub - Render will include it in deployment
+## 5. The APK will be available at: https://your-app.onrender.com/api/download-app
